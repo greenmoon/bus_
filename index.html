@@ -1,77 +1,62 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaiwanBus Monitor - 第一製藥廠</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaiwanBus Monitor</title>
 </head>
 <body>
   <h2>Bus Status Monitor for「第一製藥廠」</h2>
-  <p>Monitoring the TaiwanBus site for status "<strong>進站中</strong>" at stop <strong>第一製藥廠</strong>...</p>
+  <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>" at stop <strong>第一製藥廠</strong>...</p>
 
   <script>
-    // Embedded beep sound (1 second, 440Hz tone) as a data URI (WAV format, base64 encoded)
-    const beepSound = new Audio("data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAPAAB/qtDt/P3v066DWDETAwENKEx3o8ro+v7y2bWLXzcY37f/H9D52vgMGj384PdMnTxGfUrGFeMeX0mZb8Z5nlci7O8z85qpkXjep38nTZcRMJB+li4M0T/7fZXNATwrMFyPZKPPP3YR8LiP/d9Ki9O354vKCu/j/e/g+KB3m/46LmZ8HbSgn7ocUcLh/w/XcK/o8AAGLjh53+792GYIk+Y/pblfOW4z+dfIXz14LNm29C/AAAA");  
-    beepSound.preload = "auto";
+    const corsProxy = "https://cors-anywhere.herokuapp.com/"; // Public CORS proxy
+    const busUrl = "https://www.taiwanbus.tw/eBUSPage/Query/QueryResult.aspx?rno=90010&rn=1610761022789&lan=C";
 
-    // Function to check the bus status
+    // Sound alert
+    const beepSound = new Audio("data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAPAAB/qtDt/P3v066DWDETAwENKEx3o8ro+v7y2bWLXzcY37f/H9D52vgMGj384PdMnTxGfUrGFeMeX0mZb8Z5nlci7O8z85qpkXjep38nTZcRMJB+li4M0T/7fZXNATwrMFyPZKPPP3YR8LiP/d9Ki9O354vKCu/j/e/g+KB3m/46LmZ8HbSgn7ocUcLh/w/XcK/o8AAGLjh53+792GYIk+Y/pblfOW4z+dfIXz14LNm29C/AAAA");
+
     async function checkBusStatus() {
       try {
-        const response = await fetch("https://www.taiwanbus.tw/eBUSPage/Query/QueryResult.aspx?rno=90010&rn=1610761022789&lan=C");
+        const response = await fetch(corsProxy + busUrl);
         if (!response.ok) {
           console.error("Network response was not OK:", response.status);
           return;
         }
         const htmlText = await response.text();
 
-        // Parse the HTML response text into a DOM
+        // Parse the HTML response
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlText, "text/html");
 
-        // Find the stop name "第一製藥廠" in the parsed HTML and check its status
+        // Find "第一製藥廠" in the response and check if "進站中" is present
         let isArriving = false;
-        // Search all table cells (td) for the stop name
         const cells = doc.querySelectorAll("td");
         cells.forEach(cell => {
           const text = cell.textContent.trim();
           if (text.includes("第一製藥廠")) {
-            // If this cell contains the stop name, check nearby content for "進站中"
-            if (text.includes("進站中")) {
+            const nextCell = cell.nextElementSibling;
+            if (nextCell && nextCell.textContent.includes("進站中")) {
               isArriving = true;
-            } else {
-              // Check sibling cell (next column) or parent element for the status
-              const nextCell = cell.nextElementSibling;
-              if (nextCell && nextCell.textContent.includes("進站中")) {
-                isArriving = true;
-              } else if (cell.parentElement && cell.parentElement.textContent.includes("進站中")) {
-                // Sometimes the stop name and status might be in the same row text
-                isArriving = true;
-              }
             }
           }
         });
 
-        // If the bus is arriving ("進站中" found for 第一製藥廠), trigger alert, sound, and vibration
+        // If "進站中" is detected, trigger alert
         if (isArriving) {
-          // Play alert sound (if not blocked by browser's autoplay policy)
-          beepSound.play().catch(err => {
-            console.warn("Audio play was blocked or failed:", err);
-          });
-          // Trigger vibration (if supported and allowed)
+          beepSound.play();
           if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);  // Vibrate pattern: 200ms on, 100ms off, 200ms on
+            navigator.vibrate([200, 100, 200]); // Vibrate on supported devices
           }
-          // Show a visual alert
           alert("【通知】公車即將進站：第一製藥廠 － Bus is arriving (進站中)!");
         }
       } catch (error) {
-        console.error("Failed to fetch or parse bus data:", error);
+        console.error("Error fetching bus data:", error);
       }
     }
 
-    // Initial check immediately on page load
+    // Check bus status every 10 seconds
     checkBusStatus();
-    // Set up periodic checking every 10 seconds (10000 milliseconds)
     setInterval(checkBusStatus, 10000);
   </script>
 </body>
