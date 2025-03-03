@@ -6,7 +6,7 @@
   <title>TaiwanBus Monitor</title>
 </head>
 <body>
-  <h2>Bus Status Monitor for「第一製藥廠」 V01.02</h2>
+  <h2>Bus Status Monitor for 中壢國中 V01.03</h2>
   <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>" at stop <strong>第一製藥廠</strong>...</p>
 
   <script>
@@ -44,7 +44,7 @@
             const cells = doc.querySelectorAll("td");
             cells.forEach(cell => {
                 const text = cell.textContent.trim();
-                if (text.includes("第一製藥廠")) {
+                if (text.includes("中壢國中")) {
                     const nextCell = cell.nextElementSibling;
                     if (nextCell && nextCell.textContent.includes("進站中")) {
                         isArriving = true;
