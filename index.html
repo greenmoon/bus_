@@ -4,42 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaiwanBus Monitor</title>
+  <style>
+    #logBox {
+      width: 100%;
+      height: 200px;
+      border: 1px solid #000;
+      overflow-y: auto;
+      padding: 5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      background-color: #f8f8f8;
+    }
+  </style>
 </head>
 <body>
-  <h2>Bus Status Monitor for 中壢國中 V01.05</h2>
+  <h2>Bus Status Monitor for 中壢國中 V01.06</h2>
   <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>" at stop <strong>中壢國中</strong>...</p>
 
+  <!-- Textbox to display status updates -->
+  <textarea id="logBox" readonly></textarea>
+
   <script>
-    const corsProxy = "https://cors-anywhere.herokuapp.com/"; // Public CORS proxy
+    const corsProxy = "https://api.allorigins.win/raw?url=";
     const busUrl = "https://www.taiwanbus.tw/eBUSPage/Query/QueryResult.aspx?rno=90010&rn=1610761022789&lan=C";
 
     // Sound alert
     const beepSound = new Audio("data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAPAAB/qtDt/P3v066DWDETAwENKEx3o8ro+v7y2bWLXzcY37f/H9D52vgMGj384PdMnTxGfUrGFeMeX0mZb8Z5nlci7O8z85qpkXjep38nTZcRMJB+li4M0T/7fZXNATwrMFyPZKPPP3YR8LiP/d9Ki9O354vKCu/j/e/g+KB3m/46LmZ8HbSgn7ocUcLh/w/XcK/o8AAGLjh53+792GYIk+Y/pblfOW4z+dfIXz14LNm29C/AAAA");
 
-    //===
     let jb_count_num = 0; // Initialize the counter
-    
+
     async function checkBusStatus() {
-        jb_count_num++; // Increment the counter by 1
-        console.log(`Check #${jb_count_num}: Fetching bus status...`); // Print counter in console
-    
+        jb_count_num++; // Increment the counter
+        const logBox = document.getElementById("logBox");
+
+        // Current time
+        const now = new Date().toLocaleTimeString();
+
         try {
-            const corsProxy = "https://api.allorigins.win/raw?url=";
-            const busUrl = "https://www.taiwanbus.tw/eBUSPage/Query/QueryResult.aspx?rno=90010&rn=1610761022789&lan=C";
-    
             const response = await fetch(corsProxy + encodeURIComponent(busUrl));
             if (!response.ok) {
-                console.error(`Network error during check #${jb_count_num}: Status ${response.status}`);
+                logBox.value += `Check #${jb_count_num} [${now}]: ❌ Network error (${response.status})\n`;
                 return;
             }
-    
+
             const htmlText = await response.text();
-            console.log(`Check #${jb_count_num}: Successfully fetched bus data`); // Debug log
-    
+
             // Parse the HTML response
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, "text/html");
-    
+
             let isArriving = false;
             const cells = doc.querySelectorAll("td");
             cells.forEach(cell => {
@@ -51,16 +64,24 @@
                     }
                 }
             });
-    
-            // If the bus is arriving ("進站中" detected)
+
+            // Update text box
             if (isArriving) {
-                console.log(`Check #${jb_count_num}: 🚍 Bus is arriving at 中壢國中!`);
+                logBox.value += `Check #${jb_count_num} [${now}]: ✅ 🚍 中壢國中進站中!\n`;
+                logBox.scrollTop = logBox.scrollHeight; // Auto-scroll
+
+                // Play sound alert
+                beepSound.play();
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
                 alert("🚍 公車進站中 (中壢國中)!");
             } else {
-                console.log(`Check #${jb_count_num}: No arrival detected.`);
+                logBox.value += `Check #${jb_count_num} [${now}]: 🚏 No arrival detected.\n`;
+                logBox.scrollTop = logBox.scrollHeight;
             }
         } catch (error) {
-            console.error(`Error during check #${jb_count_num}:`, error);
+            logBox.value += `Check #${jb_count_num} [${now}]: ❌ Error fetching data\n`;
         }
     }
 
@@ -69,8 +90,6 @@
     
     // Run check every 10 seconds
     setInterval(checkBusStatus, 10000);
-
-    //===
-   </script>
+  </script>
 </body>
 </html>
