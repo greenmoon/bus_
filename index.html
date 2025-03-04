@@ -21,7 +21,7 @@
   </style>
 </head>
 <body>
-  <h2>🚍 TaiwanBus 9001 Monitor V01.14</h2>
+  <h2>🚍 TaiwanBus 9001 Monitor V01.15</h2>
   <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>"...</p>
 
   <!-- Log Box for 中壢國中 -->
@@ -50,6 +50,88 @@
     let mappedArrivals = []; // Other Mapped Stations Report
 
 async function checkBusStatus() {
+    jb_count_num++; // Increment counter
+    const now = new Date().toLocaleTimeString();
+    const zhongliReport = document.getElementById("zhongliReport");
+    const mappedReport = document.getElementById("mappedReport");
+
+    console.log(`🔍 Check #${jb_count_num} at ${now}: Fetching bus status...`);
+
+    try {
+        const response = await fetch(corsProxy + encodeURIComponent(busUrl));
+        if (!response.ok) {
+            console.error(`❌ Network error: ${response.status} - ${response.statusText}`);
+            return;
+        }
+
+        const htmlText = await response.text();
+        console.log("✅ Fetched Bus Data Preview (First 500 chars):", htmlText.substring(0, 500));
+
+        // Check if the fetched page contains bus information
+        if (!htmlText.includes("進站中")) {
+            console.warn("⚠ Warning: No '進站中' found! The TaiwanBus page structure might have changed.");
+            return;
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, "text/html");
+
+        let newZhongliArrival = false;
+        let detectedMappedArrivals = [];
+
+        // 🔍 Adjust these selectors based on TaiwanBus structure
+        const busEntries = doc.querySelectorAll(".bus-row, .busInfo, div.bus-list"); // Update this after inspecting
+
+        if (busEntries.length === 0) {
+            console.warn("⚠ No bus data elements found! The HTML structure might have changed.");
+        }
+
+        busEntries.forEach(entry => {
+            const stationNameElem = entry.querySelector(".bus-name, .station-label"); // Update selector
+            const statusElem = entry.querySelector(".bus-status, .arrival-status"); // Update selector
+
+            if (stationNameElem && statusElem) {
+                let stationName = stationNameElem.textContent.trim();
+                let status = statusElem.textContent.trim();
+
+                console.log(`🚏 Checking Station: "${stationName}", Status: "${status}"`);
+
+                if (status.includes("進站中")) {
+                    if (stationName.includes("中壢國中")) {
+                        newZhongliArrival = true;
+                    } else {
+                        detectedMappedArrivals.push(stationName);
+                    }
+                }
+            }
+        });
+
+        // Handle 中壢國中 arrivals
+        if (newZhongliArrival && !zhongliArrivals.includes(now)) {
+            zhongliArrivals.push(now);
+            zhongliReport.value += `${now} - ✅ 🚍 中壢國中 進站中\n`;
+            zhongliReport.scrollTop = zhongliReport.scrollHeight;
+            playAlert("🚍 公車進站中 (中壢國中)!");
+        }
+
+        // Handle Other Mapped Stations arrivals
+        detectedMappedArrivals.forEach(station => {
+            if (!mappedArrivals.includes(station)) {
+                mappedArrivals.push(station);
+                mappedReport.value += `${now} - ✅ 🚍 ${station} 進站中\n`;
+                mappedReport.scrollTop = mappedReport.scrollHeight;
+                playAlert(`🚍 公車進站中 (${station})!`);
+            }
+        });
+
+    } catch (error) {
+        console.error(`❌ Error fetching data:`, error);
+    }
+}
+
+    
+
+async function xcheckBusStatus() {
     jb_count_num++; // Increment counter
     const now = new Date().toLocaleTimeString();
     const zhongliReport = document.getElementById("zhongliReport");
