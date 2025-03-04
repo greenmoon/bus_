@@ -21,7 +21,7 @@
   </style>
 </head>
 <body>
-  <h2>🚍 TaiwanBus 9001 Monitor V01.13</h2>
+  <h2>🚍 TaiwanBus 9001 Monitor V01.14</h2>
   <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>"...</p>
 
   <!-- Log Box for 中壢國中 -->
@@ -48,6 +48,7 @@
     let jb_count_num = 0; // Counter
     let zhongliArrivals = []; // 中壢國中 Report
     let mappedArrivals = []; // Other Mapped Stations Report
+
 async function checkBusStatus() {
     jb_count_num++; // Increment counter
     const now = new Date().toLocaleTimeString();
@@ -128,75 +129,7 @@ async function checkBusStatus() {
     }
 }
 
-async function xcheckBusStatus() {
-    jb_count_num++; // Increment the counter
-    const now = new Date().toLocaleTimeString();
-    const zhongliReport = document.getElementById("zhongliReport");
-    const mappedReport = document.getElementById("mappedReport");
-
-    console.log(`Check #${jb_count_num} at ${now}: Fetching bus status...`); // Debugging log
-
-    try {
-        const response = await fetch(corsProxy + encodeURIComponent(busUrl));
-        if (!response.ok) {
-            console.error(`❌ Network error: ${response.status}`);
-            return;
-        }
-
-        const htmlText = await response.text();
-        console.log("✅ Fetched Bus Data:", htmlText); // Print the raw HTML for debugging
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, "text/html");
-
-        let newZhongliArrival = false;
-        let detectedMappedArrivals = [];
-
-        const rows = doc.querySelectorAll("tr");
-        if (rows.length === 0) {
-            console.warn("⚠ No <tr> elements found! The HTML structure might have changed.");
-        }
-
-        rows.forEach(row => {
-            const cells = row.querySelectorAll("td");
-            if (cells.length >= 2) {
-                let stationName = cells[0].textContent.trim();
-                let status = cells[1].textContent.trim();
-
-                console.log(`Checking Station: ${stationName}, Status: ${status}`); // Debugging Log
-
-                if (status.includes("進站中")) {
-                    if (stationName.includes("中壢國中")) {
-                        newZhongliArrival = true;
-                    } else {
-                        detectedMappedArrivals.push(stationName);
-                    }
-                }
-            }
-        });
-
-        // Handle 中壢國中 arrivals
-        if (newZhongliArrival && !zhongliArrivals.includes(now)) {
-            zhongliArrivals.push(now);
-            zhongliReport.value += `${now} - ✅ 🚍 中壢國中 進站中\n`;
-            zhongliReport.scrollTop = zhongliReport.scrollHeight;
-            playAlert("🚍 公車進站中 (中壢國中)!");
-        }
-
-        // Handle Other Mapped Stations arrivals
-        detectedMappedArrivals.forEach(station => {
-            if (!mappedArrivals.includes(station)) {
-                mappedArrivals.push(station);
-                mappedReport.value += `${now} - ✅ 🚍 ${station} 進站中\n`;
-                mappedReport.scrollTop = mappedReport.scrollHeight;
-                playAlert(`🚍 公車進站中 (${station})!`);
-            }
-        });
-
-    } catch (error) {
-        console.error(`❌ Error fetching data:`, error);
-    }
-}
+ 
 
 
     function playAlert(message) {
