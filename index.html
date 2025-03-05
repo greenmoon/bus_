@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-  <h2>🚍 TaiwanBus 9001 Monitor V01.16</h2>
+  <h2>🚍 TaiwanBus 9001 Monitor V01.17</h2>
   <p>Monitoring the TaiwanBus site for "<strong>進站中</strong>"...</p>
 
   <!-- Counter Display -->
@@ -81,7 +81,7 @@ async function checkBusStatus() {
         }
 
         const htmlText = await response.text();
-        console.log("✅ Fetched Bus Data Preview (First 500 chars):", htmlText.substring(0, 500));
+        console.log("✅ Fetched Bus Data Preview (First 2000 chars):", htmlText.substring(0, 2000));
 
         // Check if the fetched page contains bus information
         if (!htmlText.includes("進站中")) {
